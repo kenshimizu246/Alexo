@@ -1,3 +1,0 @@
-/home/pi/project/Alexo/server/CMakeFiles/rebuild_cache.dir
-/home/pi/project/Alexo/server/CMakeFiles/Alexo.dir
-/home/pi/project/Alexo/server/CMakeFiles/edit_cache.dir
