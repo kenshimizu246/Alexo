@@ -11,30 +11,30 @@ using namespace std;
 namespace tamageta {
 
 class Config {
-	private:
-		Config();
-		~Config();
-		bool initialized;
-		string appdir;
-		string logdir;
-		string pidfile;
-		int port;
-		bool daemon;
+  private:
+    Config();
+    ~Config();
+    bool initialized;
+    string appdir;
+    string logdir;
+    string pidfile;
+    unsigned int port = 9009;
+    bool daemon;
 
-	public:
-		void load(const char* filename);
-		string getAppDir();
-		string getLogDir();
-		string getPidFile();
-		int getPort();
-		bool isInitialized();
+  public:
+    void load(const char* filename);
+    string getAppDir();
+    string getLogDir();
+    string getPidFile();
+    unsigned int getPort();
+    bool isInitialized();
 
-		bool isDaemon();
+    bool isDaemon();
 
-		static Config& getInstance() {
-			static Config config;
-			return config;
-		}
+    static Config& getInstance() {
+      static Config config;
+      return config;
+    }
 };
 
 }

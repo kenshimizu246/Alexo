@@ -13,17 +13,22 @@ add_definitions(" -g -Wall -std=c++11 ")
 
 include_directories(
 	/usr/local/include
+	/usr/include
 	/usr/lib64
 )
 
 add_executable(Alexo
 src/Config.cpp
 src/App.cpp
+src/vl53l0x/I2Cdev.cpp
+src/vl53l0x/VL53L0X.cpp
+src/worker/vl53l0x_worker.cpp
 	)
 target_link_libraries(Alexo
 	pthread
 	wiringPi
 	uuid
+        boost_system
 	)
 
 
