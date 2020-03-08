@@ -51,6 +51,10 @@ using websocketpp::lib::condition_variable;
 
 #include "Config.hpp"
 #include "worker/vl53l0x_worker.hpp"
+#include "message.hpp"
+#include "pca9685.hpp"
+#include "njm2670d2.hpp"
+#include "command.hpp"
 //#include "ActionFactory.hpp"
 //#include "actions/Action.hpp"
 //#include "Session.hpp"
@@ -121,6 +125,11 @@ class Alexo : public vl53l0x_observer{
     condition_variable m_action_cond;
 
     vl53l0x_worker vl53l0x;
+    pca9685 servo;
+    njm2670d2 motorctrl{21,22,23,24};
+    command_factory cmd_factory{servo, motorctrl};
+//    cmd_factory.set(motorctrl);
+//    cmd_factory.set(servo);
 };
 
 int Alexo::force_exit = 0;
@@ -128,6 +137,12 @@ int Alexo::pidFilehandle;
 
 Alexo::Alexo() {
   force_exitx = 0;
+
+  //wiringPiSetupGpio(); // use Broadcom
+  wiringPiSetup(); // use wiringPi
+
+  motorctrl.initMode();
+  servo.PwmSetup(0x40, 50);
 
   // Initialize Asio Transport
   m_server.init_asio();
@@ -145,12 +160,12 @@ void Alexo::daemonShutdown(){
 void Alexo::update(vl53l0x_event& event){
   websocketpp::lib::error_code ec;
 
-  std::cout << "received distance: " << event.getDistance() << std::endl;
+  //std::cout << "received distance: " << event.getDistance() << std::endl;
   lock_guard<mutex> guard(m_connection_lock);
 
-  std::stringstream ss;
-  ss << event.getDistance();
-  std::string msg(ss.str());
+  std::string msg;
+  message_handler::toJSON(event, msg);
+
   con_list::iterator it;
   for (it = m_connections.begin(); it != m_connections.end(); ++it) {
     m_server.send(*it,msg,websocketpp::frame::opcode::text, ec);
@@ -250,6 +265,9 @@ void Alexo::sigIntHndlr(int sig)
 
 void Alexo::init(){
   int size = 0;
+  
+//  wiringPiSetupGpio();
+
 //  size = Config::getInstance().getI2CSize();
 //  for(int i = 0; i < size; i++){
 //    shared_ptr<I2CConf> p = Config::getInstance().getI2CConf(i);
@@ -296,7 +314,7 @@ void Alexo::run(){
   m_server.start_accept();
 
   cout << "Alexo::run() ... before start vl53l0x\n" << endl;
-  vl53l0x.add(*this);
+  vl53l0x.add((*this));
 
   vl53l0x.start();
 
@@ -331,7 +349,7 @@ void Alexo::on_message(connection_hdl hdl, server::message_ptr msg) {
   // queue message up for sending by processing thread
   {
     lock_guard<mutex> guard(m_action_lock);
-    //std::cout << "on_message" << std::endl;
+    std::cout << "on_message" << std::endl;
     m_actions.push(action(MESSAGE,hdl,msg));
   }
   m_action_cond.notify_one();
@@ -359,10 +377,38 @@ void Alexo::process_messages() {
     } else if (a.type == MESSAGE) {
       lock_guard<mutex> guard(m_connection_lock);
 
-      con_list::iterator it;
-      for (it = m_connections.begin(); it != m_connections.end(); ++it) {
-        m_server.send(*it,a.msg);
+      std::string cc{a.msg->get_payload()};
+
+      std::cout << "MESSAGE: " << cc << std::endl;
+
+      std::shared_ptr<command> mp = message_handler::toCommand(cmd_factory, cc);
+      mp->doCommand();
+/*
+      std::cout << "type: " << mp->getType()  << std::endl;
+
+      if (mp->getType() == drive_command_type::FORWARD){
+        std::cout << "forward selected!" << std::endl;
+        motorctrl.forward();
+      }else if (mp->getType() == drive_command_type::BACKWARD){
+        std::cout << "backward selected!" << std::endl;
+        motorctrl.backward();
+      }else if (mp->getType() == drive_command_type::RIGHT){
+        std::cout << "right selected!" << std::endl;
+        motorctrl.right();
+      }else if (mp->getType() == drive_command_type::LEFT){
+        std::cout << "left selected!" << std::endl;
+        motorctrl.left();
+      }else if (mp->getType() == drive_command_type::STOP){
+        std::cout << "stop selected!" << std::endl;
+        motorctrl.stop();
+      }else if (mp->getType() == drive_command_type::AUTO){
+        std::cout << "else selected!" << std::endl;
       }
+*/
+      //con_list::iterator it;
+      //for (it = m_connections.begin(); it != m_connections.end(); ++it) {
+      //  m_server.send(*it,a.msg);
+      //}
     } else {
       // undefined.
     }

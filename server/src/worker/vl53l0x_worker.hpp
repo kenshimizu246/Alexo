@@ -9,7 +9,12 @@
 #include <pthread.h>
 #include <set>
 #include <vector>
-#include <time.h>
+//#include <time.h>
+
+#include <ctime>
+#include <iostream>
+#include <locale>
+
 
 #ifndef _vl53l0x_worker_hpp
 #define _vl53l0x_worker_hpp
@@ -21,16 +26,19 @@ public:
 };
 
 enum vl53l0x_status {
-  NOMAL,
-  ERROR
+  SUCCESS,
+  FAIL
 }; 
 
 class vl53l0x_event {
 public:
-  vl53l0x_event(uint16_t v) : distance(v) {
-    time(&tm);
-    status = vl53l0x_status.NORMALAL
+  vl53l0x_event(uint16_t v)
+      : distance(v),
+        status(vl53l0x_status::SUCCESS),
+        tm(std::time(nullptr))
+  {
   }
+
   vl53l0x_event(vl53l0x_status s) : status(s) {
     time(&tm);
     distance = 8096;
@@ -38,10 +46,11 @@ public:
   uint16_t getDistance(){return distance;}
   time_t getTime(){return tm;}
   vl53l0x_status getStatus(){return status;};
+
 private:
   uint16_t distance;
-  time_t tm;
   vl53l0x_status status;
+  std::time_t tm;
 };
 
 class vl53l0x_observer {
