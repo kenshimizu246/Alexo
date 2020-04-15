@@ -23,6 +23,8 @@ src/App.cpp
 src/vl53l0x/I2Cdev.cpp
 src/vl53l0x/VL53L0X.cpp
 src/worker/vl53l0x_worker.cpp
+src/worker/hcsr04_worker.cpp
+src/worker/gy271_worker.cpp
 src/pca9685.cpp
 src/message.cpp
 	)

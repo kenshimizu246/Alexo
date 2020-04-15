@@ -51,6 +51,8 @@ using websocketpp::lib::condition_variable;
 
 #include "Config.hpp"
 #include "worker/vl53l0x_worker.hpp"
+#include "worker/hcsr04_worker.hpp"
+#include "worker/gy271_worker.hpp"
 #include "message.hpp"
 #include "pca9685.hpp"
 #include "njm2670d2.hpp"
@@ -92,7 +94,7 @@ struct action {
     server::message_ptr msg;
 };
 
-class Alexo : public vl53l0x_observer{
+class Alexo : public vl53l0x_observer, public hcsr04_observer, public gy271_observer {
   public:
     Alexo();
     void init();
@@ -100,10 +102,13 @@ class Alexo : public vl53l0x_observer{
     void run();
     void process_messages();
     void update(vl53l0x_event& event);
+    void update(hcsr04_event& event);
+    void update(gy271_event& event);
 
   private:
     static void signal_handler(int sig);
     static void sigIntHndlr(int sig);
+    static void sigIntExHndlr(int sig);
     static void daemonShutdown();
 
     void on_open(connection_hdl hdl);
@@ -124,7 +129,9 @@ class Alexo : public vl53l0x_observer{
     mutex m_connection_lock;
     condition_variable m_action_cond;
 
-    vl53l0x_worker vl53l0x;
+    vl53l0x_worker vl53l0x{0};
+    hcsr04_worker hcsr04{28, 29};
+    gy271_worker gy271;
     pca9685 servo;
     njm2670d2 motorctrl{21,22,23,24};
     command_factory cmd_factory{servo, motorctrl};
@@ -161,6 +168,35 @@ void Alexo::update(vl53l0x_event& event){
   websocketpp::lib::error_code ec;
 
   //std::cout << "received distance: " << event.getDistance() << std::endl;
+  lock_guard<mutex> guard(m_connection_lock);
+
+  std::string msg;
+  message_handler::toJSON(event, msg);
+
+  con_list::iterator it;
+  for (it = m_connections.begin(); it != m_connections.end(); ++it) {
+    m_server.send(*it,msg,websocketpp::frame::opcode::text, ec);
+  }
+}
+
+void Alexo::update(hcsr04_event& event){
+  websocketpp::lib::error_code ec;
+
+  //std::cout << "received distance: " << event.getDistance() << std::endl;
+  lock_guard<mutex> guard(m_connection_lock);
+
+  std::string msg;
+  message_handler::toJSON(event, msg);
+
+  con_list::iterator it;
+  for (it = m_connections.begin(); it != m_connections.end(); ++it) {
+    m_server.send(*it,msg,websocketpp::frame::opcode::text, ec);
+  }
+}
+
+void Alexo::update(gy271_event& event){
+  websocketpp::lib::error_code ec;
+
   lock_guard<mutex> guard(m_connection_lock);
 
   std::string msg;
@@ -263,6 +299,12 @@ void Alexo::sigIntHndlr(int sig)
   force_exit = 1;
 }
 
+void Alexo::sigIntExHndlr(int sig)
+{
+  force_exit = 1;
+  exit(EXIT_SUCCESS);
+}
+
 void Alexo::init(){
   int size = 0;
   
@@ -299,6 +341,7 @@ void Alexo::run(){
     signal(SIGINT, sigIntHndlr);
     cout << "daemonized!" << endl;
   } else {
+    signal(SIGINT, sigIntExHndlr);
     cout << "not daemonized!" << endl;
   }
 
@@ -315,8 +358,12 @@ void Alexo::run(){
 
   cout << "Alexo::run() ... before start vl53l0x\n" << endl;
   vl53l0x.add((*this));
+  hcsr04.add((*this));
+  gy271.add((*this));
 
   vl53l0x.start();
+  hcsr04.start();
+  gy271.start();
 
   // Start the ASIO io_service run loop
   cout << "Alexo::run() ... Start the ASIO io_service run loop\n" << endl;

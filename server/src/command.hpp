@@ -85,6 +85,7 @@ public:
   unsigned int getId() { return id;}
   unsigned int getValue() {return value; }
   void doCommand(){
+    std::cout << "servo.PwmWrite(" << id << ":" << value << ")" << std::endl;
     servo.PwmWrite(id, 0, value);
   }
 private:

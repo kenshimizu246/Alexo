@@ -23,7 +23,7 @@ void vl53l0x_worker::removex(vl53l0x_observer& o){
 }
 
 void vl53l0x_worker::update(uint16_t d){
-  vl53l0x_event e(d);
+  vl53l0x_event e(id, d);
   for(auto* o : observers){
     o->update(e);
   }
@@ -149,7 +149,7 @@ void vl53l0x_worker::run() {
   for (;!stop; ++cnt) {
     try {
       distance = sensor.readRangeSingleMillimeters();
-      std::cout << "vl53l0x_worker::run(): distance: " << distance << std::endl;
+      //std::cout << "vl53l0x_worker::run(): distance: " << distance << std::endl;
       update(distance);
     } catch (const std::exception & error) {
       //std::cerr << "Error geating measurement with reason:" << std::endl << error.what() << std::endl;
@@ -160,9 +160,9 @@ void vl53l0x_worker::run() {
 
     // Check IO timeout and print range information
     if (sensor.timeoutOccurred()) {
-      std::cout << "\rReading" << cnt << " | timeout!" << std::endl;
+      //std::cout << "\rReading" << cnt << " | timeout!" << std::endl;
     } else {
-      std::cout << "\rReading" << cnt << " | " << distance << std::endl;
+      //std::cout << "\rReading" << cnt << " | " << distance << std::endl;
     }
     std::cout << std::flush;
 

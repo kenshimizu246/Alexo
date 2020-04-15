@@ -16,6 +16,8 @@
 
 
 #include "worker/vl53l0x_worker.hpp"
+#include "worker/hcsr04_worker.hpp"
+#include "worker/gy271_worker.hpp"
 #include "message.hpp"
 #include "command.hpp"
 
@@ -30,6 +32,8 @@ const std::string message_handler::kRIGHT = "RIGHT";
 const std::string message_handler::kLEFT = "LEFT";
 const std::string message_handler::kSTOP = "STOP";
 const std::string message_handler::kAUTO = "AUTO";
+
+
 
 void message_handler::toString(std::time_t t, char* b){
   if(!std::strftime(b, sizeof(b), "%FT%T%z", std::localtime(&t))){
@@ -48,7 +52,7 @@ void message_handler::toString(std::time_t t, char* b){
   "body":{
     "distance": 123,
     "status": "SUCCESS",
-    "utc": "",
+    "timestamp": "",
   }
 }
 *************************************/
@@ -63,13 +67,16 @@ void message_handler::toJSON(vl53l0x_event& event, std::string& s){
   Value header(kObjectType);
   header.AddMember("message-type", "event", allocator);
   header.AddMember("source", "vl53l0x", allocator);
-  header.AddMember("source-id", 0, allocator);
+  header.AddMember("source-id", event.getID(), allocator);
   d.AddMember("header", header, allocator);
 
+  char buff[100];
+  int len = strftime(buff, sizeof(buff), "%D %T", event.getGMTime());
+
   Value body(kObjectType);
-  body.AddMember("distance", event.getDistance(), allocator);
+  body.AddMember("distance", Value().SetFloat(event.getDistance()), allocator);
   body.AddMember("status", event.getStatus(), allocator);
-  body.AddMember("utc", "", allocator);
+  body.AddMember("timestamp", Value().SetString(buff, len, allocator), allocator);
   d.AddMember("body", body, allocator);
 
   StringBuffer sb;
@@ -82,6 +89,107 @@ void message_handler::toJSON(vl53l0x_event& event, std::string& s){
   // actually char*
 }
 
+/*************************************
+{ "header":{
+    "message-type":"event",
+    "message-version":1,
+    "session-id":"abc123",
+    "source": "hcsr04"
+    "source-id": "0"
+  },
+  "body":{
+    "distance": 123,
+    "status": "SUCCESS",
+    "timestamp": "",
+  }
+}
+*************************************/
+void message_handler::toJSON(hcsr04_event& event, std::string& s){
+  Document d;
+  // define the document as an object rather than an array
+  d.SetObject();
+
+  // create an allocator
+  Document::AllocatorType& allocator = d.GetAllocator();
+
+  Value header(kObjectType);
+  header.AddMember("message-type", "event", allocator);
+  header.AddMember("source", "hcsr04", allocator);
+  header.AddMember("source-id", 0, allocator);
+  d.AddMember("header", header, allocator);
+
+  char buff[100];
+  int len = strftime(buff, sizeof(buff), "%D %T", event.getGMTime());
+
+  Value body(kObjectType);
+  //body.AddMember("distance", event.getDistance(), allocator);
+  body.AddMember("distance", Value().SetInt64(event.getDistance()), allocator);
+  body.AddMember("status", event.getStatus(), allocator);
+  body.AddMember("timestamp", Value().SetString(buff, len, allocator), allocator);
+  d.AddMember("body", body, allocator);
+
+  StringBuffer sb;
+  Writer<StringBuffer> writer(sb);
+  d.Accept(writer);
+
+  s.append(sb.GetString(), sb.GetLength());
+  // std::cout << sb.GetString() << std::endl;
+  //  const Ch* GetString() const {
+  // actually char*
+}
+
+/*************************************
+{ "header":{
+    "message-type":"event",
+    "message-version":1,
+    "session-id":"abc123",
+    "source": "gy271"
+    "source-id": "0"
+  },
+  "body":{
+    "heading": 123,
+    "x": 123,
+    "y": 123,
+    "z": 123,
+    "status": "SUCCESS",
+    "timestamp": "",
+  }
+}
+*************************************/
+void message_handler::toJSON(gy271_event& event, std::string& s){
+  Document d;
+  d.SetObject();
+
+  // create an allocator
+  Document::AllocatorType& allocator = d.GetAllocator();
+
+  Value header(kObjectType);
+  header.AddMember("message-type", "event", allocator);
+  header.AddMember("source", "gy271", allocator);
+  header.AddMember("source-id", 0, allocator);
+  d.AddMember("header", header, allocator);
+
+  char buff[100];
+  int len = strftime(buff, sizeof(buff), "%D %T", event.getGMTime());
+
+  Value body(kObjectType);
+  body.AddMember("heading", Value().SetInt64(event.getHeading()), allocator);
+  body.AddMember("x", Value().SetInt64(event.getX()), allocator);
+  body.AddMember("y", Value().SetInt64(event.getY()), allocator);
+  body.AddMember("z", Value().SetInt64(event.getZ()), allocator);
+  body.AddMember("status", event.getStatus(), allocator);
+  body.AddMember("timestamp", Value().SetString(buff, len, allocator), allocator);
+  d.AddMember("body", body, allocator);
+
+  StringBuffer sb;
+  Writer<StringBuffer> writer(sb);
+  d.Accept(writer);
+
+  s.append(sb.GetString(), sb.GetLength());
+  // std::cout << sb.GetString() << std::endl;
+  //  const Ch* GetString() const {
+  // actually char*
+}
 
 
 /*************************************
