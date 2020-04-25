@@ -94,7 +94,7 @@ struct action {
     server::message_ptr msg;
 };
 
-class Alexo : public vl53l0x_observer, public hcsr04_observer, public gy271_observer {
+class Alexo : public vl53l0x_observer, public hcsr04_observer, public gy271_observer, public command_observer {
   public:
     Alexo();
     void init();
@@ -104,6 +104,7 @@ class Alexo : public vl53l0x_observer, public hcsr04_observer, public gy271_obse
     void update(vl53l0x_event& event);
     void update(hcsr04_event& event);
     void update(gy271_event& event);
+    void update(command_event& event);
 
   private:
     static void signal_handler(int sig);
@@ -201,6 +202,24 @@ void Alexo::update(gy271_event& event){
 
   std::string msg;
   message_handler::toJSON(event, msg);
+
+  con_list::iterator it;
+  for (it = m_connections.begin(); it != m_connections.end(); ++it) {
+    m_server.send(*it,msg,websocketpp::frame::opcode::text, ec);
+  }
+}
+
+void Alexo::update(command_event& event){
+  websocketpp::lib::error_code ec;
+
+  lock_guard<mutex> guard(m_connection_lock);
+
+  std::string msg;
+  if(typeid(event) == typeid(servo_command_event&)){
+    message_handler::toJSON(static_cast<servo_command_event&>(event), msg);
+  } else if(typeid(event) == typeid(servo_command_event&)){
+    message_handler::toJSON(static_cast<drive_command_event&>(event), msg);
+  }
 
   con_list::iterator it;
   for (it = m_connections.begin(); it != m_connections.end(); ++it) {
@@ -429,6 +448,7 @@ void Alexo::process_messages() {
       std::cout << "MESSAGE: " << cc << std::endl;
 
       std::shared_ptr<command> mp = message_handler::toCommand(cmd_factory, cc);
+      mp->add((*this));
       mp->doCommand();
 /*
       std::cout << "type: " << mp->getType()  << std::endl;

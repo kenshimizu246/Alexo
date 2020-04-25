@@ -13,6 +13,7 @@
 #include <iostream>
 #include <locale>
 #include <exception>
+#include <typeinfo>
 
 
 #include "worker/vl53l0x_worker.hpp"
@@ -191,6 +192,98 @@ void message_handler::toJSON(gy271_event& event, std::string& s){
   // actually char*
 }
 
+
+void message_handler::toJSON(servo_command_event& event, std::string& s){
+  Document d;
+  d.SetObject();
+
+  // create an allocator
+  Document::AllocatorType& allocator = d.GetAllocator();
+
+  Value header(kObjectType);
+  header.AddMember("message-type", "event", allocator);
+  header.AddMember("source", "command", allocator);
+  header.AddMember("source-id", 0, allocator);
+  d.AddMember("header", header, allocator);
+
+  char buff[100];
+  int len = strftime(buff, sizeof(buff), "%D %T", event.getGMTime());
+
+  Value body(kObjectType);
+  body.AddMember("id", Value().SetInt64(event.getID()), allocator);
+  body.AddMember("value", Value().SetInt64(event.getValue()), allocator);
+  body.AddMember("timestamp", Value().SetString(buff, len, allocator), allocator);
+  d.AddMember("body", body, allocator);
+
+  StringBuffer sb;
+  Writer<StringBuffer> writer(sb);
+  d.Accept(writer);
+
+  s.append(sb.GetString(), sb.GetLength());
+}
+
+void message_handler::toJSON(drive_command_event& event, std::string& s){
+  Document d;
+  d.SetObject();
+
+  // create an allocator
+  Document::AllocatorType& allocator = d.GetAllocator();
+
+  Value header(kObjectType);
+  header.AddMember("message-type", "event", allocator);
+  header.AddMember("source", "command", allocator);
+  header.AddMember("source-id", 0, allocator);
+  d.AddMember("header", header, allocator);
+
+  char buff[100];
+  int len = strftime(buff, sizeof(buff), "%D %T", event.getGMTime());
+
+  Value body(kObjectType);
+  body.AddMember("type", Value().SetString(buff, len, allocator), allocator);
+  body.AddMember("timestamp", Value().SetString(buff, len, allocator), allocator);
+  d.AddMember("body", body, allocator);
+
+  StringBuffer sb;
+  Writer<StringBuffer> writer(sb);
+  d.Accept(writer);
+
+  s.append(sb.GetString(), sb.GetLength());
+}
+
+void message_handler::toJSON(command_event& event, std::string& s){
+  Document d;
+  d.SetObject();
+
+  // create an allocator
+  Document::AllocatorType& allocator = d.GetAllocator();
+
+  Value header(kObjectType);
+  header.AddMember("message-type", "event", allocator);
+  header.AddMember("source", "command", allocator);
+  header.AddMember("source-id", 0, allocator);
+  d.AddMember("header", header, allocator);
+
+  char buff[100];
+  int len = strftime(buff, sizeof(buff), "%D %T", event.getGMTime());
+
+  Value body(kObjectType);
+  if(typeid(event) == typeid(servo_command_event&)){
+    servo_command_event& ee = static_cast<servo_command_event&>(event);
+    body.AddMember("id", Value().SetInt64(ee.getID()), allocator);
+    body.AddMember("value", Value().SetInt64(ee.getValue()), allocator);
+  } else if(typeid(event) == typeid(drive_command_event&)){
+    drive_command_event& ee = static_cast<drive_command_event&>(event);
+    //body.AddMember("type", Value().SetString(buff, len, allocator), allocator);
+  }
+  body.AddMember("timestamp", Value().SetString(buff, len, allocator), allocator);
+  d.AddMember("body", body, allocator);
+
+  StringBuffer sb;
+  Writer<StringBuffer> writer(sb);
+  d.Accept(writer);
+
+  s.append(sb.GetString(), sb.GetLength());
+}
 
 /*************************************
 { "header":{

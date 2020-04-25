@@ -107,6 +107,12 @@ void pca9685::PwmWrite(int pin, int on, int off){
 
   wiringPiI2CWriteReg16(fd, reg    , on  & 0x0FFF);
   wiringPiI2CWriteReg16(fd, reg + 2, off & 0x0FFF);
+
+  pca9685_pwm_write_event e(pin, on, off);
+
+  for(auto* o : observers){
+//    o->update(e);
+  }
 }
 
 void pca9685::PwmRead(int pin, int *on, int *off){

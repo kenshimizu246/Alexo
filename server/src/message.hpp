@@ -22,6 +22,9 @@ public:
   static void toJSON(vl53l0x_event& event, std::string& s);
   static void toJSON(hcsr04_event& event, std::string& s);
   static void toJSON(gy271_event& event, std::string& s);
+  static void toJSON(servo_command_event& event, std::string& s);
+  static void toJSON(drive_command_event& event, std::string& s);
+  static void toJSON(command_event& event, std::string& s);
   static std::shared_ptr<command> toCommand(command_factory& factory, std::string& s);
 
   static std::shared_ptr<drive_command> toDriveCommand(std::string& s);
