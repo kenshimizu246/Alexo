@@ -4,16 +4,17 @@ import ReactDOM from 'react-dom';
 
 function ServoSlider(handler, id, conn, min, max, step, initVal, width, height){
   const [value, setValue] = useState(0);
+  const [eventDesc, setEventDesc] = useState("");
   const [clicking, setClicking] = useState(false);
 
   const handleId = 'handle'+id;
   const boxId = 'box'+id;
 
   useEffect(() => {
-    conn.on('MSG',onMessage.bind(this));
-    console.log('useEffect...');
-
-    return () => {conn.removeEventListener('MSG', onMessage)};
+//    conn.on('MSG',onMessage.bind(this));
+//    console.log('useEffect...');
+//
+//    return () => {conn.removeEventListener('MSG', onMessage)};
   }, []);
 
   function onMessage(msg){
@@ -31,6 +32,7 @@ function ServoSlider(handler, id, conn, min, max, step, initVal, width, height){
               +':'+e.clientX
               );
     setClicking(true);
+    setEventDesc('MouseDown');
   }
 
   function pos2val() {
@@ -76,10 +78,12 @@ function ServoSlider(handler, id, conn, min, max, step, initVal, width, height){
     setValue(val);
     setClicking(false);
     handler(val);
+    setEventDesc('MouseUp');
   }
 
   function handleMouseMove(e) {
     if(e.buttons == 1 && clicking){
+      setEventDesc('MouseMove');
       var box = document.getElementById(boxId);
       var hdl = document.getElementById(handleId);
 
@@ -123,16 +127,39 @@ function ServoSlider(handler, id, conn, min, max, step, initVal, width, height){
     border: 'solid 1px'
   };
 
+  function handleTouchstart(e){
+    setEventDesc('Touchstart:'+e);
+  }
+
+  function handleTouchmove(e){
+    setEventDesc('Touchmove');
+  }
+
+  function handleTouchend(e){
+    var str = 'Touchend'
+    str = str + ':' + e.changedTouches[0].clientX;
+    setEventDesc(str);
+  }
+
+  function handleTouchcancel(e){
+    setEventDesc('Touchcancel');
+  }
+
+        //onMouseDown={handleMouseDown}
+        //onMouseUp={handleMouseUp}
+        // onMouseMove={handleMouseMove}
   return (
     <div className='sliderBox' id={boxId}
-        onMouseMove={handleMouseMove}
+        onTouchStart={handleTouchstart}
+        onTouchMove={handleTouchmove}
+        onTouchEnd={handleTouchend}
+        onTouchCancel={handleTouchcancel}
     >
       <div className='sliderHandle'
         id={handleId}
         style={hdlstyle}
-        onMouseDown={handleMouseDown}
-        onMouseUp={handleMouseUp}
       />
+      <div>{value}:{eventDesc}</div>
     </div>
   );
 }

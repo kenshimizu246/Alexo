@@ -47,8 +47,6 @@ using websocketpp::lib::lock_guard;
 using websocketpp::lib::unique_lock;
 using websocketpp::lib::condition_variable;
 
-
-
 #include "Config.hpp"
 #include "worker/vl53l0x_worker.hpp"
 #include "worker/hcsr04_worker.hpp"
@@ -57,19 +55,8 @@ using websocketpp::lib::condition_variable;
 #include "pca9685.hpp"
 #include "njm2670d2.hpp"
 #include "command.hpp"
-//#include "ActionFactory.hpp"
-//#include "actions/Action.hpp"
-//#include "Session.hpp"
-//#include "SessionManager.hpp"
-//#include "AppWebSocketWriter.hpp"
-//#include "AppCtx.hpp"
-
-//#include "PCA9685.hpp"
-//#include "HcSr04.hpp"
 
 #include <wiringPi.h>
-
-//#define HERTZ 50
 
 #define DAEMON_NAME "simpledaemon"
 
@@ -136,8 +123,6 @@ class Alexo : public vl53l0x_observer, public hcsr04_observer, public gy271_obse
     pca9685 servo;
     njm2670d2 motorctrl{21,22,23,24};
     command_factory cmd_factory{servo, motorctrl};
-//    cmd_factory.set(motorctrl);
-//    cmd_factory.set(servo);
 };
 
 int Alexo::force_exit = 0;
@@ -146,7 +131,6 @@ int Alexo::pidFilehandle;
 Alexo::Alexo() {
   force_exitx = 0;
 
-  //wiringPiSetupGpio(); // use Broadcom
   wiringPiSetup(); // use wiringPi
 
   motorctrl.initMode();
@@ -450,32 +434,6 @@ void Alexo::process_messages() {
       std::shared_ptr<command> mp = message_handler::toCommand(cmd_factory, cc);
       mp->add((*this));
       mp->doCommand();
-/*
-      std::cout << "type: " << mp->getType()  << std::endl;
-
-      if (mp->getType() == drive_command_type::FORWARD){
-        std::cout << "forward selected!" << std::endl;
-        motorctrl.forward();
-      }else if (mp->getType() == drive_command_type::BACKWARD){
-        std::cout << "backward selected!" << std::endl;
-        motorctrl.backward();
-      }else if (mp->getType() == drive_command_type::RIGHT){
-        std::cout << "right selected!" << std::endl;
-        motorctrl.right();
-      }else if (mp->getType() == drive_command_type::LEFT){
-        std::cout << "left selected!" << std::endl;
-        motorctrl.left();
-      }else if (mp->getType() == drive_command_type::STOP){
-        std::cout << "stop selected!" << std::endl;
-        motorctrl.stop();
-      }else if (mp->getType() == drive_command_type::AUTO){
-        std::cout << "else selected!" << std::endl;
-      }
-*/
-      //con_list::iterator it;
-      //for (it = m_connections.begin(); it != m_connections.end(); ++it) {
-      //  m_server.send(*it,a.msg);
-      //}
     } else {
       // undefined.
     }

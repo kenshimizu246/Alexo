@@ -8,7 +8,9 @@ import DriveButton from './DriveButton';
 import Connection from './Connection';
 import ServoSlider from './ServoSlider';
 
+var msgcnt = 0;
 var conn = new Connection('ws://' + window.location.hostname + ':9009', ['alexo']);
+
 
 function onSystemEvent(msg){
   //var s = JSON.stringify(msg);
@@ -26,11 +28,14 @@ function onMessage(msg){
 
 conn.connect();
 
+
 function App() {
   function handlerDrive(cmd){
+    msgcnt++;
     const message = {
       header: {
         target: 'drive',
+        seq: msgcnt,
       },
       body: {
         command: cmd,
@@ -41,9 +46,11 @@ function App() {
   }
 
   function handlerRangeCamY(value){
+    msgcnt++;
     const message = {
       header: {
         target: 'servo',
+        seq: msgcnt,
       },
       body: {
         id: 0,
@@ -58,6 +65,7 @@ function App() {
     const message = {
       header: {
         target: 'servo',
+        seq: msgcnt,
       },
       body: {
         id: 1,
@@ -72,6 +80,7 @@ function App() {
     const message = {
       header: {
         target: 'drive',
+        seq: msgcnt,
       },
       body: {
         command: cmd,
@@ -86,6 +95,7 @@ function App() {
     const message = {
       header: {
         target: 'servo',
+        seq: msgcnt,
       },
       body: {
         id: 2,
