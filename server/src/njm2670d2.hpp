@@ -31,9 +31,9 @@ public:
   }
 
   void initMode(){
-    stc::out << "njm2670d2::initMode" << std::endl;
+    std::cout << "njm2670d2::initMode" << std::endl;
     pinMode(a1, OUTPUT);
-    pinMode(b2, OUTPUT);
+    pinMode(a2, OUTPUT);
     pinMode(b1, OUTPUT);
     pinMode(b2, OUTPUT);
 
